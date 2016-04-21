@@ -78,29 +78,25 @@ int matrixMultiply(const double *const sourceA,
                    double *const destination, 
                    const int size)
 {
+  int j, i, ci, cj, k;
   //mini-kernel
-  for (int j = 0; j < NB; j+= NU) {
-    for (int i = 0; i < NB; i+= MU) {
-      for (int ci = i; ci < fmin(i+MU, NB); ++ci) {
-        for (int cj = j; cj < fmin(j+NU, NB); ++cj) {
+  for (j = 0; j < NB; j+= NU) {
+    for (i = 0; i < NB; i+= MU) {
+      const int max_ci = fmin(i+MU, NB);
+      for (ci = i; ci < max_ci; ++ci) {
+        const int max_cj = fmin(j+NU, NB);
+        for (cj = j; cj < max_cj; ++cj) {
           //load C[ci][cj] into register
           register double C = destination[(ci*size)+cj];
-          //printf("load C(i:%d)(j:%d): %.02f\n", ci, cj, cr);
-          for (int k = 0; k < NB; k++) {
+          for (k = 0; k < NB; k++) {
             //micro-kernel
             //load A[ci][k] into register
-            //__m128d A = sourceA[(ci*size)+k];
-            //__m128d B = sourceB[(k*size)+cj];
             register double const A = sourceA[(ci*size)+k];
             //load B[k][cj] into register
             register double const B = sourceB[(k*size)+cj];
             //multiply A and B and add to C
-            //printf("Mutipy C(i:%d)(j:%d): %.02f x %.02f + %.02f\n", ci, cj, ar, br, cr);
-            //__mulsd
             C += A*B;
           }
-          //printf("Store C(i:%d)(j:%d): %.02f\n", ci, cj, cr);
-          //_mm_store_ps(destination[(ci*size)+cj], C); 
           destination[(ci*size)+cj] = C;
         }
       }
@@ -112,10 +108,11 @@ int matrixMultiply(const double *const sourceA,
 
 double *generateRandomMatrixOfSize(int size)
 {
-  double *m __attribute__ ((aligned (16))) = (double*) malloc(size*size*sizeof(double));
+  int i, j;
+  double *m = (double*) malloc(size*size*sizeof(double));
   srand((unsigned int)rtclock(NULL));
-  for (int i = 0; i < size; ++i) {
-    for (int j = 0; j < size; ++j) {
+  for (i = 0; i < size; ++i) {
+    for (j = 0; j < size; ++j) {
       m[(i*size)+j] = rand() % (MAX_MATRIX_NUMBER + 1);
     }
   }
@@ -124,9 +121,10 @@ double *generateRandomMatrixOfSize(int size)
 
 double *matrixOfZerosWithSize(int size)
 {
-  double *m __attribute__ ((aligned (16))) = (double*) malloc(size*size*sizeof(double));
-  for (int i = 0; i < size; ++i) {
-    for (int j = 0; j < size; ++j) {
+  int i, j;
+  double *m = (double*) malloc(size*size*sizeof(double));
+  for (i = 0; i < size; ++i) {
+    for (j = 0; j < size; ++j) {
       m[(i*size)+j] = 0.0;
     }
   }
@@ -135,10 +133,11 @@ double *matrixOfZerosWithSize(int size)
 
 void printMatrix(double *m, int size, char *name)
 {
+  int i, j;
   printf("%s\n", name);
-  for (int i = 0; i < size; ++i) {
+  for (i = 0; i < size; ++i) {
     printf("| ");
-    for (int j = 0; j < size; ++j) {
+    for (j = 0; j < size; ++j) {
       printf("%.2f ", m[(i*size)+j]);
     }
     printf("|\n");

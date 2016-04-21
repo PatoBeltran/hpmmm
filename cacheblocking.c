@@ -6,7 +6,7 @@
 #include <sys/time.h>
 #include <emmintrin.h>
 
-static const int NB = 47; // 3*NB^2 <= 20480
+static const int NB = 63;
 static const int MU = 6;
 static const int NU = 5;
 static const int MAX_MATRIX_NUMBER = 30;
@@ -91,23 +91,16 @@ int matrixMultiply(const double *const sourceA,
               for (ci = i; ci < max_ci; ++ci) {
                 //load C[ci][cj] into register
                 register double C = destination[(ci*size)+cj];
-                //printf("load C(i:%d)(j:%d): %.02f\n", ci, cj, C);
                 const int max_k = fmin(outer_k+NB, size);
                 for (k = outer_k; k < max_k; ++k) {
                   //micro-kernel
                   //load A[ci][k] into register
-                  //__m128d A = sourceA[(ci*size)+k];
-                  //__m128d B = sourceB[(k*size)+cj];
                   register double const A = sourceA[(ci*size)+k];
                   //load B[k][cj] into register
                   register double const B = sourceB[(k*size)+cj];
                   //multiply A and B and add to C
-                  //printf("Mutipy C(i:%d)(j:%d): %.02f x %.02f + %.02f\n", ci, cj, A, B, C);
-                  //__mulsd
                   C += A*B;
                 }
-                //printf("Store C(i:%d)(j:%d): %.02f\n", ci, cj, C);
-                //_mm_store_ps(destination[(ci*size)+cj], C); 
                 destination[(ci*size)+cj] = C;
               }
             }
@@ -126,8 +119,7 @@ double *generateRandomMatrixOfSize(int size)
   srand((unsigned int)time(NULL));
   for (i = 0; i < size; ++i) {
     for (j = 0; j < size; ++j) {
-      //m[(i*size)+j] = rand() % (MAX_MATRIX_NUMBER + 1);
-      m[(i*size)+j] = 2;
+      m[(i*size)+j] = rand() % (MAX_MATRIX_NUMBER + 1);
     }
   }
   return m;
