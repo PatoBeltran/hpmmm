@@ -13,9 +13,9 @@ static const int MAX_MATRIX_NUMBER = 30;
 
 double *generateRandomMatrixOfSize(int size);
 double *matrixOfZerosWithSize(int size);
-int matrixMultiply(const double *const sourceA, 
-    const double *const sourceB, 
-    double *const destination, 
+int matrixMultiply(const double *const __restrict__ sourceA, 
+    const double *const __restrict__ sourceB, 
+    double *const __restrict__ destination, 
     const int size);
 void simpleMatrixMultiply(const double *const sourceA, 
     const double *const sourceB, 
@@ -113,9 +113,11 @@ int matrixMultiply(const double *const __restrict__ sourceA,
     double *const __restrict__ destination, 
     const int size)
 {
-  //__assume_aligned(sourceA, 16); 
-  //__assume_aligned(sourceB, 16); 
-  //__assume_aligned(destination, 16);
+  #ifdef __INTEL_COMPILER
+  __assume_aligned(sourceA, 16); 
+  __assume_aligned(sourceB, 16); 
+  __assume_aligned(destination, 16);
+  #endif
 
   int outer_j, outer_i, outer_k, j, i, k, cleanup_i, cleanup_j;
   const int n_a = ceil((double)size/(double)NB);
@@ -225,7 +227,9 @@ int matrixMultiply(const double *const __restrict__ sourceA,
 
 double *copyA(const double *const m, const int size)
 {
-  //__assume_aligned(m, 16); 
+  #ifdef __INTEL_COMPILER
+  __assume_aligned(m, 16);
+  #endif
   int i, j, k, l, h;
   const int n = ceil((double)size/(double)NB);
   const int inner_n = floor((double)NB/(double)MU);
@@ -242,7 +246,9 @@ double *copyA(const double *const m, const int size)
 
 double *copyB(const double *const m, const int size, const int start_j)
 {
-  //__assume_aligned(m, 16); 
+  #ifdef __INTEL_COMPILER
+  __assume_aligned(m, 16);
+  #endif 
   int i, j, k, l;
   const int n = ceil((double)size/(double)NB);
   const int inner_n = floor((double)NB/(double)NU);
@@ -258,7 +264,9 @@ double *copyB(const double *const m, const int size, const int start_j)
 
 double *copyC(const double *const m, const int size, const int start_i, const int start_j)
 {
-  //__assume_aligned(m, 16); 
+  #ifdef __INTEL_COMPILER
+  __assume_aligned(m, 16);
+  #endif
   int i, j, k, l;
   const int n_i = floor((double)NB/(double)MU);
   const int n_j = floor((double)NB/(double)NU);

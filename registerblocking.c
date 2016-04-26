@@ -141,7 +141,7 @@ int matrixMultiply(const double *const sourceA,
 double *generateRandomMatrixOfSize(int size)
 {
   int i, j;
-  double *m __attribute__((aligned(16))) = (double*) malloc(size*size*sizeof(double));
+  double *m = (double*) malloc(size*size*sizeof(double));
   for (i = 0; i < size; ++i)
     for (j = 0; j < size; ++j)
       m[(i*size)+j] = rand() % (MAX_MATRIX_NUMBER + 1);
@@ -152,7 +152,7 @@ double *generateRandomMatrixOfSize(int size)
 double *matrixOfZerosWithSize(int size)
 {
   int i, j;
-  double *m __attribute__((aligned(16))) = (double*) malloc(size*size*sizeof(double));
+  double *m = (double*) malloc(size*size*sizeof(double));
   for (i = 0; i < size; ++i)
     for (j = 0; j < size; ++j)
       m[(i*size)+j] = 0.0;
