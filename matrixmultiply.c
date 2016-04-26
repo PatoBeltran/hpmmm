@@ -120,36 +120,25 @@ int matrixMultiply(const double *const __restrict__ sourceA,
   //TODO: I could probably copy A just once
   for(outer_j = 0; outer_j < size; outer_j+=NB)
   {
-    //printf("new outer j:%d\n", outer_j);
     cleanup_j = fmod(fmin(size - outer_j, NB), NU) != 0;
     const double *const copy_B __attribute__((aligned(16))) = copyB(sourceB, size, outer_j);
     for(outer_i = 0; outer_i < size; outer_i+=NB)
     {
-      //printf("new outer i:%d\n", outer_i);
       cleanup_i = fmod(fmin(size-outer_i, NB), MU) != 0;
       const double *const copy_A __attribute__((aligned(16))) = copyA(sourceA, size, outer_i);
-      //TODO: I want to have this here
-      //double *const copy_C __attribute__((aligned(16))) = copyC(destination, size, i, j);
+      double *const copy_C __attribute__((aligned(16))) = copyC(destination, size, outer_i, outer_j);
       for(outer_k = 0; outer_k < size; outer_k+=NB)
       {
-        //printf("new outer k:%d\n", outer_k);
         const int max_j = fmin(outer_j+NB-NU+1, size-NU+1);
         for (j = outer_j; j < max_j; j+=NU)
         {
-          //printf("new j:%d\n", j);
           const int max_i = fmin(outer_i+NB-MU+1, size-MU+1);
           for (i = outer_i; i < max_i; i+=MU)
           {
-            //printf("new i:%d\n", i);
-            double *const copy_C __attribute__((aligned(16))) = copyC(destination, size, i, j);
-            //printf("Copy C. From (%d,%d) to (%d,%d)\n", (i), (j), (i+3), (j+1));
-
-            register __m128d C1 = _mm_load_pd(&copy_C[0]);
-            register __m128d C2 = _mm_load_pd(&copy_C[2]);
-            register __m128d C3 = _mm_load_pd(&copy_C[4]);
-            register __m128d C4 = _mm_load_pd(&copy_C[6]);
-
-            //printf("load C: %0.0f, %0.0f, %0.0f, %0.0f, %0.0f, %0.0f, %0.0f, %0.0f\n", copy_C[0], copy_C[1], copy_C[2], copy_C[3], copy_C[4], copy_C[5], copy_C[6], copy_C[7]);
+            register __m128d C1 = _mm_load_pd(&copy_C[((i-outer_i)*NU + ((j-outer_j)*NB))]);
+            register __m128d C2 = _mm_load_pd(&copy_C[((i-outer_i)*NU + ((j-outer_j)*NB))+2]);
+            register __m128d C3 = _mm_load_pd(&copy_C[((i-outer_i)*NU + ((j-outer_j)*NB))+4]);
+            register __m128d C4 = _mm_load_pd(&copy_C[((i-outer_i)*NU + ((j-outer_j)*NB))+6]);
 
             const int max_k = fmin(outer_k+NB, size);
             for (k = outer_k; k < max_k; ++k)
@@ -171,23 +160,19 @@ int matrixMultiply(const double *const __restrict__ sourceA,
               C3 = _mm_add_pd(C3,rC3);
               C4 = _mm_add_pd(C4,rC4);
             }
-            _mm_store_pd(&copy_C[0], C1);
-            _mm_store_pd(&copy_C[2], C2);
-            _mm_store_pd(&copy_C[4], C3);
-            _mm_store_pd(&copy_C[6], C4);
+            _mm_store_pd(&copy_C[((i-outer_i)*NU + ((j-outer_j)*NB))], C1);
+            _mm_store_pd(&copy_C[((i-outer_i)*NU + ((j-outer_j)*NB))+2], C2);
+            _mm_store_pd(&copy_C[((i-outer_i)*NU + ((j-outer_j)*NB))+4], C3);
+            _mm_store_pd(&copy_C[((i-outer_i)*NU + ((j-outer_j)*NB))+6], C4);
 
-            destination[((i)*size)+(j)] = copy_C[0];
-            destination[((i)*size)+(j+1)] = copy_C[1];
-            destination[((i+1)*size)+(j)] = copy_C[2];
-            destination[((i+1)*size)+(j+1)] = copy_C[3];
-            destination[((i+2)*size)+(j)] = copy_C[4];
-            destination[((i+2)*size)+(j+1)] = copy_C[5];
-            destination[((i+3)*size)+(j)] = copy_C[6];
-            destination[((i+3)*size)+(j+1)] = copy_C[7];
-
-            //printMatrix(destination, size, "step");
-            
-            free(copy_C);
+            destination[((i)*size)+(j)] = copy_C[((i-outer_i)*NU + ((j-outer_j)*NB))];
+            destination[((i)*size)+(j+1)] = copy_C[((i-outer_i)*NU + ((j-outer_j)*NB))+1];
+            destination[((i+1)*size)+(j)] = copy_C[((i-outer_i)*NU + ((j-outer_j)*NB))+2];
+            destination[((i+1)*size)+(j+1)] = copy_C[((i-outer_i)*NU + ((j-outer_j)*NB))+3];
+            destination[((i+2)*size)+(j)] = copy_C[((i-outer_i)*NU + ((j-outer_j)*NB))+4];
+            destination[((i+2)*size)+(j+1)] = copy_C[((i-outer_i)*NU + ((j-outer_j)*NB))+5];
+            destination[((i+3)*size)+(j)] = copy_C[((i-outer_i)*NU + ((j-outer_j)*NB))+6];
+            destination[((i+3)*size)+(j+1)] = copy_C[((i-outer_i)*NU + ((j-outer_j)*NB))+7];
           }
           if (cleanup_i)
           {
@@ -211,9 +196,8 @@ int matrixMultiply(const double *const __restrict__ sourceA,
           }
         }
       }
-      //TODO: I want to have this here      
       free((void *)copy_A);
-      //free(copy_C);
+      free(copy_C);
     }
     if (cleanup_j)
     {
@@ -239,8 +223,8 @@ double *copyA(const double *const m, const int size, const int start_i)
 {
   //__assume_aligned(m, 16); 
   int i, j, k, l;
-  const int n = ceil((double)size/(double)NB); //How many tiles do we have?
-  const int inner_n = floor((double)NB/(double)MU); // how many partitions in each tile
+  const int n = ceil((double)size/(double)NB);
+  const int inner_n = floor((double)NB/(double)MU);
   double *res __attribute__((aligned(16))) = (double*)malloc(inner_n*n*MU*NB*sizeof(double));
   for(k=0; k < n; ++k)
     for(l = 0; l < inner_n; ++l)
@@ -270,11 +254,15 @@ double *copyB(const double *const m, const int size, const int start_j)
 double *copyC(const double *const m, const int size, const int start_i, const int start_j)
 {
   //__assume_aligned(m, 16); 
-  int i, j;
-  double *res __attribute__((aligned(16))) = (double*)malloc(MU*NU*sizeof(double));
-  for(i = 0; i < MU; ++i)
-    for(j = 0; j < NU; ++j)
-      res[(i*NU) + j] = m[((start_i + i) * size)+(start_j + j)];
+  int i, j, k, l;
+  const int n_i = floor((double)NB/(double)MU); //how many times can we go down
+  const int n_j = floor((double)NB/(double)NU); //how many times can we go right
+  double *res __attribute__((aligned(16))) = (double*)malloc(n_i*n_j*MU*NU*sizeof(double));
+  for(k=0; k < n_j; ++k)
+    for(l=0; l < n_i; ++l)
+      for(i = 0; i < MU; ++i)
+        for(j = 0; j < NU; ++j)
+          res[(i*NU)+j + l*(MU*NU) + k*(NU*NB)] = m[((start_i + i) * size)+(start_j + j) + ((l*MU)*size) + (k*NU)];
   
   return res;
 }
@@ -290,8 +278,6 @@ double *generateRandomMatrixOfSize(int size)
   for (i = 0; i < size; ++i)
     for (j = 0; j < size; ++j)
       m[(i*size)+j] = rand() % (MAX_MATRIX_NUMBER + 1);
-      //m[(i*size)+j] = (i*size)+j;
-      //m[(i*size)+j] = 2;
   
   return m;
 }
