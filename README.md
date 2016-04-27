@@ -63,19 +63,19 @@ Below are shown some plots that show the relationship between the matrix sizes a
 
 Graphs are shown below:
 
-![Register Blocking Graph](plots/RegisterBlocking.png =350x)
+![Register Blocking Graph](/plots/RegisterBlocking.png?raw=true =350x)
 
 We can see how in small values the `GFLOPS` tend to go higher. This might be because of the use of floating point arithmetic and because the time spent on small matrices tends to be zero, then the `GFLOPS` will tend to go higher.
 
-![Cache Blocking Graph](plots/CacheBlocking.png =350x)
+![Cache Blocking Graph](/plots/CacheBlocking.png?raw=true =350x)
 
 The performance gain after `Cache blocking` is notizable but not significant.  It has a consistent performance behaviour for most matrix size, but it drops for the matrix of size `4096`. Considering it takes this program a couple of minutes to run on matrices bigger than 4000, there could be external factors that make it slow.
 
-![Data Copying Graph](plots/DataCopying.png =350x)
+![Data Copying Graph](/plots/DataCopying.png?raw=true =350x)
 
 Data copying was the most difficult optimization of them all and it is definetly one bottleneck on the performance. It improved performance by a factor of two over `Cache Blocking`. But there could be a more efficient way to calculate the indexes of the matrices copied. Also it makes matrices bigger, wasting time on unnecesary calculations and wasting space on unused elements on the copy matrix. This could be made more efficient by using a smarter copying technique.
 
-![Vectorization Graph](plots/Vectorization.png =350x)
+![Vectorization Graph](/plots/Vectorization.png?raw=true =350x)
 
 We can clearly see that vectorization brought an important increase in the performance of the program. This could be higher if the architecture used for testing was able to use certain features of intrinsics like `_mm_256 registers`. Unfortunately this was not tested within the reach of this project.
 
